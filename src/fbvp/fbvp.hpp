@@ -8,7 +8,10 @@
 #include <eigen3/unsupported/Eigen/CXX11/src/Tensor/Tensor.h>
 #include <eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDimensions.h>
 #include <eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorFixedSize.h>
+#include <functional>
+#include <stdexcept>
 #include <vector>
+#include "test.hpp"
 
 namespace fbvp {
 
@@ -52,11 +55,37 @@ namespace fbvp {
         template<typename U>
         requires std::is_same_v<std::remove_reference_t<U>, JacFunPair<d,n>>
         void add_element(U&& value) {
+            bool valid = test_jac_fun_pair(value);
+            if(!valid) throw std::runtime_error("Ode element is invalid\n");
             elements.emplace_back(std::forward<U>(value));
+        }
+
+        bool test_composition() {
+            const int N = (n == -1) ? 2 : n;
+
+            Y<d,n> y = Eigen::MatrixXf::Zero(N, d);
+            Y<d,n> dy = Eigen::MatrixXf::Zero(N, d); 
+            J<d,n> jac = Eigen::MatrixXf::Zero(N*d, N*d);
+
+            return test::jac_diferentiation(
+                [this](const Y<d,n>& y, Y<d,n>& dy, J<d,n>* jac) { this->fun(y, dy, jac); },
+                y, dy, jac);
         }
 
     private:
         std::vector<JacFunPair<d,n>> elements;
     };
 
+
+    template<unsigned int d, int n = Eigen::Dynamic>
+    requires (is_dynamic_or_unsigned<n>())
+    bool test_jac_fun_pair( JacFunPair<d, n>& el) {
+        const int N = (n == -1) ? 2 : n;
+
+        Y<d,n> y = Eigen::MatrixXf::Zero(N, d);
+        Y<d,n> dy = Eigen::MatrixXf::Zero(N, d); 
+        J<d,n> jac = Eigen::MatrixXf::Zero(N*d, N*d);
+
+        return test::jac_diferentiation(el.fun, y, dy, jac);
+    }
 }
