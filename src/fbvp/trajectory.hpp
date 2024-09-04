@@ -7,7 +7,7 @@ namespace fbvp {
     requires (is_dynamic_or_unsigned<n>())
     JacFunPair<4, n> velocity() {
         return JacFunPair<4, n>{
-            [](const T<n>& t, const Y<4, n>& y, Y<4, n>& dy, J<4, n>* jac) {
+            [](const Y<4, n>& y, Y<4, n>& dy, J<4, n>* jac) {
                 dy.col(0) += y.col(2);
                 dy.col(1) += y.col(3);
 
@@ -26,7 +26,7 @@ namespace fbvp {
     requires (is_dynamic_or_unsigned<n>())
     JacFunPair<4, n> gravity (float value = -9.8) {
         return JacFunPair<4, n>{
-            [value](const T<n>& t, const Y<4, n>& y, Y<4, n>& dy, J<4, n>* jac) {
+            [value](const Y<4, n>& y, Y<4, n>& dy, J<4, n>* jac) {
                 dy.col(3).array() += value;
             },
         };
@@ -38,8 +38,8 @@ namespace fbvp {
     JacFunPair<4, n> air_drag(float drag_coef, float air_density, float area, float mass) {
         float drag_factor = drag_coef * air_density * area / (2*mass);
         return JacFunPair<4, n>{
-            [drag_factor](const T<n>& t, const Y<4, n>& y, Y<4, n>& dy, J<4, n>* jac) {
-                T<n> v = (y.col(2).array().square() + y.col(3).array().square()).array().sqrt();
+            [drag_factor](const Y<4, n>& y, Y<4, n>& dy, J<4, n>* jac) {
+                Eigen::Matrix<float, n, 1> v = (y.col(2).array().square() + y.col(3).array().square()).array().sqrt();
                 dy.col(2).array() -= drag_factor*v.array()*y.col(2).array();
                 dy.col(3).array() -= drag_factor*v.array()*y.col(3).array();
 

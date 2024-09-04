@@ -21,10 +21,6 @@ namespace fbvp {
     requires (is_dynamic_or_unsigned<n>())
     using Y = Eigen::Matrix<float, n, d>; 
 
-    template<int n = Eigen::Dynamic>
-    requires (is_dynamic_or_unsigned<n>())
-    using T = Eigen::Matrix<float, n, 1>;
-
     template<unsigned int d, int n = Eigen::Dynamic>
     requires (is_dynamic_or_unsigned<n>())
     using J = std::conditional_t<
@@ -37,7 +33,7 @@ namespace fbvp {
     template<unsigned int d, int n = Eigen::Dynamic>
     requires (is_dynamic_or_unsigned<n>())
     struct JacFunPair {
-        std::function<void(const T<n>& t, const Y<d,n>& y, Y<d,n>& dy, J<d,n>* jac)> fun;
+        std::function<void(const Y<d,n>& y, Y<d,n>& dy, J<d,n>* jac)> fun;
     };
 
     template<unsigned int d, int n = Eigen::Dynamic>
@@ -47,9 +43,9 @@ namespace fbvp {
         OdeSystem() = default;
         OdeSystem(const std::vector<JacFunPair<d,n>>& elements) : elements(elements) {}
 
-        void fun(const T<n>& t, const Y<d,n>& y, Y<d,n>& dy, J<d,n>* jac = nullptr) {
+        void fun(const Y<d,n>& y, Y<d,n>& dy, J<d,n>* jac = nullptr) {
             for(const auto& el : elements) {
-                el.fun(t, y, dy, jac);
+                el.fun(y, dy, jac);
             }
         }
 
