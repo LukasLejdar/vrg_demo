@@ -23,7 +23,7 @@ namespace fbvp {
 
     template<unsigned int d, int n = Eigen::Dynamic>
     requires (is_dynamic_or_positive<n>())
-    using Y = Eigen::Matrix<double, n, d>; 
+    using Y = Eigen::Matrix<double, d, n>; 
 
     template<unsigned int d, int n = Eigen::Dynamic>
     requires (is_dynamic_or_positive<n>())
@@ -45,8 +45,8 @@ namespace fbvp {
     bool test_jac_fun_pair( JacFunPair<d, n>& el) {
         const int N = (n == -1) ? 2 : n;
 
-        Y<d,n> y = Eigen::Matrix<double, N, d>::Zero();
-        Y<d,n> dy = Eigen::Matrix<double, N, d>::Zero(); 
+        Y<d,n> y = Eigen::Matrix<double, d, N>::Zero();
+        Y<d,n> dy = Eigen::Matrix<double, d, N>::Zero(); 
         J<d,n> jac = Eigen::Matrix<double, N*d, N*d>::Zero();
 
         return test::jac_diferentiation(el.fun, y, dy, jac);
@@ -78,8 +78,8 @@ namespace fbvp {
         bool test_composition() {
             const int N = (n == -1) ? 2 : n;
 
-            Y<d,n> y = Eigen::Matrix<double, N, d>::Zero();
-            Y<d,n> dy = Eigen::Matrix<double, N, d>::Zero(); 
+            Y<d,n> y = Eigen::Matrix<double, d, N>::Zero();
+            Y<d,n> dy = Eigen::Matrix<double, d, N>::Zero(); 
             J<d,n> jac = Eigen::Matrix<double, N*d, N*d>::Zero();
 
             return test::jac_diferentiation(
@@ -99,5 +99,36 @@ namespace fbvp {
     template<int n, unsigned int d>
     struct MulIfPositive{
         static constexpr int r = (n > 0) ? n*d : n;
+    };
+
+    template<unsigned int d, int n = Eigen::Dynamic>
+    requires (n == Eigen::Dynamic || n > 1)
+    void simpson_residual(OdeSystem<d,n>& system, 
+            const double ts, 
+            const Y<d,n>& y, Y<d,n>& f, J<d,n> *jf,
+            Y<d,SubOneIfPositive<n>::r> &yc,
+            Y<d,SubOneIfPositive<n>::r> &fc,
+            J<d,SubOneIfPositive<n>::r> *jc,
+            Y<d,SubOneIfPositive<n>::r> &res,
+            Eigen::Matrix<double, MulIfPositive<SubOneIfPositive<n>::r,d>::r, MulIfPositive<n,d>::r> *jac
+    ) {
+        const int N = y.cols();
+        constexpr int nl1 = SubOneIfPositive<n>::r;
+
+        system.fun(y, f, jf);
+        yc = 0.5 * (y.leftCols(N - 1) + y.rightCols(N - 1)) 
+         + ts/8 * (f.leftCols(N - 1) - f.rightCols(N - 1));
+
+        system.fun(yc, fc, jc);
+        res = (f.leftCols(N - 1) + f.rightCols(N - 1) + 4 * fc);
+        res = y.rightCols(N - 1) - y.leftCols(N - 1) - ts/6 * res ;
+
+        if (jac == nullptr && jf != nullptr && jc != nullptr) return;
+
+        (*jac).rightCols((N-1)*d) += Eigen::MatrixXd::Identity((N-1)*d, (N-1)*d) - ts/6 * (*jf).bottomRows((N-1)*d).rightCols((N-1)*d);
+        (*jac).rightCols((N-1)*d) += -ts/3 * (*jc) + ts*ts/12 * (*jc) * (*jf).bottomRows((N-1)*d).rightCols((N-1)*d);
+
+        (*jac).leftCols((N-1)*d) += -Eigen::MatrixXd::Identity((N-1)*d, (N-1)*d) - ts/6 * (*jf).topRows((N-1)*d).leftCols((N-1)*d);
+        (*jac).leftCols((N-1)*d) += -ts/3 * (*jc) - ts*ts/12 * (*jc) * (*jf).topRows((N-1)*d).leftCols((N-1)*d);
     };
 }

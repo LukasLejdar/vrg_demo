@@ -114,7 +114,6 @@ namespace test {
                     << yit - y.data()  << ", " << xit - x.data()
                     << "] is " << *jit << " but should be " << *yit << "\n";
 
-                std::cout << x << "\n\n";
                 std::cout << y << "\n\n";
                 std::cout << j << "\n\n";
                 return false;

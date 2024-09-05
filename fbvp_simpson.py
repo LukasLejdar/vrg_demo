@@ -12,24 +12,24 @@ g = np.array([0, -9.8])
 
 
 def fun(t,  y):
-    v = np.sqrt(y[:, 1] ** 2 + y[:, 3]**2)
-    ax = -drag_factor*v*y[:, 1] + g[0]
+    v = np.sqrt(y[:, 2] ** 2 + y[:, 3]**2)
+    ax = -drag_factor*v*y[:, 2] + g[0]
     ay = -drag_factor*v*y[:, 3] + g[1]
-    return np.stack([y[:, 1], ax, y[:, 3], ay], axis=1)
+    return np.stack([y[:, 2], y[:, 3], ax, ay], axis=1)
 
 
 def fun_jac(t, y):
     dy = np.zeros(y.shape*2)
-    v = np.sqrt(y[:, 1] ** 2 + y[:, 3]**2)
+    v = np.sqrt(y[:, 2] ** 2 + y[:, 3]**2)
     v[v == 0] = 1
 
     indices = range(y.shape[0])
-    dy[indices, 0, indices, 1] = 1
-    dy[indices, 2, indices, 3] = 1
-    dy[indices, 1, indices, 1] = -drag_factor*( v + y[:, 1]**2/v ) 
+    dy[indices, 0, indices, 2] = 1
+    dy[indices, 1, indices, 3] = 1
+    dy[indices, 2, indices, 2] = -drag_factor*( v + y[:, 2]**2/v ) 
     dy[indices, 3, indices, 3] = -drag_factor*( v + y[:, 3]**2/v ) 
-    dy[indices, 1, indices, 3] = -drag_factor*y[:, 1]*y[:, 3]/v
-    dy[indices, 3, indices, 1] = -drag_factor*y[:, 3]*y[:, 1]/v
+    dy[indices, 2, indices, 3] = -drag_factor*y[:, 2]*y[:, 3]/v
+    dy[indices, 3, indices, 2] = -drag_factor*y[:, 3]*y[:, 2]/v
 
     return dy
 
@@ -50,6 +50,17 @@ def residual_jac(t, y, ts, yc):
 
     dres = np.zeros((m-1, n, m, n))
     dres[:,:,1:,:] += id - ts/6*(f_jac[1:,:,1:,:])
+
+    np.set_printoptions(linewidth=np.inf)
+
+    #print(fc_jac)
+    print()
+    print(fc_jac.reshape(8, 8))
+    print()
+    print(f_jac.reshape(12, 12))
+    print()
+    print(dres.reshape(8,12))
+
     dres[:,:,1:,:] -= ts/3*np.tensordot(fc_jac, id - ts/4*f_jac[1:,:,1:,:])
 
     dres[:,:,:-1,:] -= id + ts/6*f_jac[:-1,:,:-1,:]
@@ -58,31 +69,31 @@ def residual_jac(t, y, ts, yc):
     return dres, fc_jac
 
 
-N = 15
+N = 3 
 v0 = 350 
-theta = 0.316
-target = np.array([1300, 20])
+theta = 0.1
+target = np.array([1200, 20])
 time = 12
 ts = time / N
 
 t = np.linspace(0, 1, N)
 y = np.zeros((N, 4))
-y[:, 0::2] = np.linspace(0, target, N)
-y[:, 1] = math.cos(theta) * v0
-y[:, 3] = math.sin(theta) * v0
+y[:, 0:2] = np.linspace(0, target, N)
+y[:, 2] = v0 * math.cos(theta)
+y[:, 3] = v0 * math.sin(theta)
 
 
 for i in range(100):
-    y[-1, 0::2] = target
-    y[0, :] = np.array([0, math.cos(theta) * v0, 0, math.sin(theta) * v0 ])
+    y[-1, 0:2] = target
+    y[0, :] = np.array([0, 0, math.cos(theta) * v0, math.sin(theta) * v0 ])
 
     res, yc, z, f = residual(t, y, ts)
     jac, fc_jac = residual_jac(t, y, ts, yc)
     jac[:,:, -1, 0] = -z/6 -ts/12*np.tensordot(fc_jac, (f[:-1] - f[1:])) # dres/dts
-    jac[:,:, -1, 2] = -jac[:,:,0,1]*math.sin(theta)*v0 + jac[:,:,0,3]*math.cos(theta)*v0 # dres/dtheta
+    jac[:,:, -1, 1] = -jac[:,:,0,2]*math.sin(theta)*v0 + jac[:,:,0,3]*math.cos(theta)*v0 # dres/dtheta
 
     fig = tpl.figure()
-    fig.plot(y[:, 0], y[:, 2], width=100, height=20)
+    fig.plot(y[:, 0], y[:, 1], width=100, height=20)
     fig.show()
 
     print(ts, theta, np.sum(res ** 2))
@@ -90,7 +101,7 @@ for i in range(100):
     dy = np.tensordot(np.linalg.tensorinv(jac[:, :, 1:, :]), res)
     y[1:,:] -= dy
     ts -= dy[-1, 0] 
-    theta -= dy[-1,2]
+    theta -= dy[-1,1]
 
 
 
