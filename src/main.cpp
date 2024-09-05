@@ -17,9 +17,9 @@ int main() {
 
     system.test_composition();
 
-    fbvp::Y<D> y = Eigen::MatrixXf::Constant(N, D, 1);
-    fbvp::Y<D> dy = Eigen::MatrixXf::Constant(N, D, 0);
-    fbvp::J<D> jac = Eigen::MatrixXf::Constant(N*D, N*D, 0);
+    fbvp::Y<D> y = Eigen::MatrixXd::Constant(N, D, 1);
+    fbvp::Y<D> dy = Eigen::MatrixXd::Constant(N, D, 0);
+    fbvp::J<D> jac = Eigen::MatrixXd::Constant(N*D, N*D, 0);
 
     system.fun(y, dy, &jac);
 

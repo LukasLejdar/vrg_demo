@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <cstdlib>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/src/Core/Matrix.h>
@@ -16,37 +17,51 @@
 namespace fbvp {
 
     template<int n>
-    constexpr bool is_dynamic_or_unsigned() {
+    constexpr bool is_dynamic_or_positive() {
         return (n > 0) || (n == Eigen::Dynamic);
     }
 
     template<unsigned int d, int n = Eigen::Dynamic>
-    requires (is_dynamic_or_unsigned<n>())
-    using Y = Eigen::Matrix<float, n, d>; 
+    requires (is_dynamic_or_positive<n>())
+    using Y = Eigen::Matrix<double, n, d>; 
 
     template<unsigned int d, int n = Eigen::Dynamic>
-    requires (is_dynamic_or_unsigned<n>())
+    requires (is_dynamic_or_positive<n>())
     using J = std::conditional_t<
         (n == -1),
-        Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>,
-        Eigen::Matrix<float, n*static_cast<int>(d), n*static_cast<int>(d)> 
+        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>,
+        Eigen::Matrix<double, n*static_cast<int>(d), n*static_cast<int>(d)> 
     >;
 
 
     template<unsigned int d, int n = Eigen::Dynamic>
-    requires (is_dynamic_or_unsigned<n>())
+    requires (is_dynamic_or_positive<n>())
     struct JacFunPair {
         std::function<void(const Y<d,n>& y, Y<d,n>& dy, J<d,n>* jac)> fun;
     };
 
     template<unsigned int d, int n = Eigen::Dynamic>
-    requires (is_dynamic_or_unsigned<n>())
+    requires (is_dynamic_or_positive<n>())
+    bool test_jac_fun_pair( JacFunPair<d, n>& el) {
+        const int N = (n == -1) ? 2 : n;
+
+        Y<d,n> y = Eigen::Matrix<double, N, d>::Zero();
+        Y<d,n> dy = Eigen::Matrix<double, N, d>::Zero(); 
+        J<d,n> jac = Eigen::Matrix<double, N*d, N*d>::Zero();
+
+        return test::jac_diferentiation(el.fun, y, dy, jac);
+    }
+
+    template<unsigned int d, int n = Eigen::Dynamic>
+    requires (is_dynamic_or_positive<n>())
     class OdeSystem {
     public:
         OdeSystem() = default;
         OdeSystem(const std::vector<JacFunPair<d,n>>& elements) : elements(elements) {}
 
         void fun(const Y<d,n>& y, Y<d,n>& dy, J<d,n>* jac = nullptr) {
+            assert(y.rows() == dy.rows());
+            if (jac != nullptr) { assert(y.rows()*y.cols() == (*jac).rows() && (*jac).rows() == (*jac).cols()); }
             for(const auto& el : elements) {
                 el.fun(y, dy, jac);
             }
@@ -63,9 +78,9 @@ namespace fbvp {
         bool test_composition() {
             const int N = (n == -1) ? 2 : n;
 
-            Y<d,n> y = Eigen::MatrixXf::Zero(N, d);
-            Y<d,n> dy = Eigen::MatrixXf::Zero(N, d); 
-            J<d,n> jac = Eigen::MatrixXf::Zero(N*d, N*d);
+            Y<d,n> y = Eigen::Matrix<double, N, d>::Zero();
+            Y<d,n> dy = Eigen::Matrix<double, N, d>::Zero(); 
+            J<d,n> jac = Eigen::Matrix<double, N*d, N*d>::Zero();
 
             return test::jac_diferentiation(
                 [this](const Y<d,n>& y, Y<d,n>& dy, J<d,n>* jac) { this->fun(y, dy, jac); },
@@ -76,16 +91,13 @@ namespace fbvp {
         std::vector<JacFunPair<d,n>> elements;
     };
 
+    template<int n>
+    struct SubOneIfPositive{
+        static constexpr int r = (n > 0) ? n - 1 : n;
+    };
 
-    template<unsigned int d, int n = Eigen::Dynamic>
-    requires (is_dynamic_or_unsigned<n>())
-    bool test_jac_fun_pair( JacFunPair<d, n>& el) {
-        const int N = (n == -1) ? 2 : n;
-
-        Y<d,n> y = Eigen::MatrixXf::Zero(N, d);
-        Y<d,n> dy = Eigen::MatrixXf::Zero(N, d); 
-        J<d,n> jac = Eigen::MatrixXf::Zero(N*d, N*d);
-
-        return test::jac_diferentiation(el.fun, y, dy, jac);
-    }
+    template<int n, unsigned int d>
+    struct MulIfPositive{
+        static constexpr int r = (n > 0) ? n*d : n;
+    };
 }
