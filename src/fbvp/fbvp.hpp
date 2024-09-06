@@ -1,5 +1,6 @@
 #pragma once
 
+#include "test.hpp"
 #include <cassert>
 #include <cstdlib>
 #include <eigen3/Eigen/Dense>
@@ -9,13 +10,9 @@
 #include <eigen3/unsupported/Eigen/CXX11/src/Tensor/Tensor.h>
 #include <eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDimensions.h>
 #include <eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorFixedSize.h>
-#include <functional>
-#include <stdexcept>
-#include <vector>
-#include "test.hpp"
+
 
 namespace fbvp {
-
     template<int n>
     constexpr bool is_dynamic_or_positive() {
         return (n > 0) || (n == Eigen::Dynamic);
@@ -33,62 +30,77 @@ namespace fbvp {
         Eigen::Matrix<double, n*static_cast<int>(d), n*static_cast<int>(d)> 
     >;
 
-
-    template<unsigned int d, int n = Eigen::Dynamic>
-    requires (is_dynamic_or_positive<n>())
-    struct JacFunPair {
-        std::function<void(const Y<d,n>& y, Y<d,n>& dy, J<d,n>* jac)> fun;
+    template <unsigned int d>
+    struct JacFun {
+        template<int n = Eigen::Dynamic>
+        requires (is_dynamic_or_positive<n>())
+        void fun(const Y<d,n>& y, Y<d,n>& dy, J<d,n>* jac);
     };
 
-    template<unsigned int d, int n = Eigen::Dynamic>
-    requires (is_dynamic_or_positive<n>())
-    bool test_jac_fun_pair( JacFunPair<d, n>& el) {
-        const int N = (n == -1) ? 2 : n;
 
-        Y<d,n> y = Eigen::Matrix<double, d, N>::Zero();
-        Y<d,n> dy = Eigen::Matrix<double, d, N>::Zero(); 
-        J<d,n> jac = Eigen::Matrix<double, N*d, N*d>::Zero();
-
-        return test::jac_diferentiation(el.fun, y, dy, jac);
-    }
-
-    template<unsigned int d, int n = Eigen::Dynamic>
-    requires (is_dynamic_or_positive<n>())
+    template <unsigned int d, int... Ns>
+    requires (sizeof...(Ns) > 0)
     class OdeSystem {
     public:
-        OdeSystem() = default;
-        OdeSystem(const std::vector<JacFunPair<d,n>>& elements) : elements(elements) {}
+        template<typename T>
+        void add_element(T& t) {
+            (add_to_vtable<T, Ns>(t), ...);
+            funcs.push_back(&t);
+        }
 
-        void fun(const Y<d,n>& y, Y<d,n>& dy, J<d,n>* jac = nullptr) {
-            assert(y.rows() == dy.rows());
-            if (jac != nullptr) { assert(y.rows()*y.cols() == (*jac).rows() && (*jac).rows() == (*jac).cols()); }
-            for(const auto& el : elements) {
-                el.fun(y, dy, jac);
+        template<int n = Eigen::Dynamic>
+        requires (is_dynamic_or_positive<n>())
+        void fun(const Y<d,n>& y, Y<d,n>& dy, J<d,n>* jac) {
+            assert(funcs.size() == vtable<n>().size());
+            auto el = vtable<n>().begin();
+            for (auto t = funcs.begin(); t != funcs.end(); el++, t++) {
+                std::invoke(*el, *t, y, dy, jac);
             }
         }
 
-        template<typename U>
-        requires std::is_same_v<std::remove_reference_t<U>, JacFunPair<d,n>>
-        void add_element(U&& value) {
-            bool valid = test_jac_fun_pair(value);
-            if(!valid) throw std::runtime_error("Ode element is invalid\n");
-            elements.emplace_back(std::forward<U>(value));
+        template<int n>
+        requires (is_dynamic_or_positive<n>())
+        bool test_composition() {
+            constexpr int N = (n < 1)? 3 : n;
+
+            Y<d,n> y = Y<d,n>::Zero(d, N);
+            Y<d,n> dy = Y<d,n>::Zero(d, N); 
+            J<d,n> jac = J<d,n>::Zero(d*N, d*N);
+
+            return test::jac_diferentiation(
+                [this](const Y<d,n>& y, Y<d,n>& dy, J<d,n>* jac) { 
+                    this->fun(y, dy, jac); }, y, dy, jac);
         }
 
         bool test_composition() {
-            const int N = (n == -1) ? 2 : n;
-
-            Y<d,n> y = Eigen::Matrix<double, d, N>::Zero();
-            Y<d,n> dy = Eigen::Matrix<double, d, N>::Zero(); 
-            J<d,n> jac = Eigen::Matrix<double, N*d, N*d>::Zero();
-
-            return test::jac_diferentiation(
-                [this](const Y<d,n>& y, Y<d,n>& dy, J<d,n>* jac) { this->fun(y, dy, jac); },
-                y, dy, jac);
+            return (test_composition<Ns>() && ...);
         }
 
     private:
-        std::vector<JacFunPair<d,n>> elements;
+        template <typename... Args>
+        struct vtable_func {
+            template <typename T>
+            static void run(JacFun<d>* fun, Args... args) {
+                const auto bound = [&](Args... args) {
+                    static_cast<T*>(fun)->fun(args...);
+                };
+
+                std::invoke(bound, args...);
+            }
+        };
+
+        template<typename T, int n>
+        void add_to_vtable(JacFun<d>& fun) {
+            vtable<n>().push_back(vtable_func<const Y<d,n>&, Y<d,n>&, J<d,n>*>::template run<T>);
+        }
+        
+        template<int n>
+        static auto& vtable() {
+            static std::vector<void(*)(JacFun<d>*, const Y<d,n>&, Y<d,n>&, J<d,n>*)> vec;
+            return vec;
+        }
+
+        std::vector<JacFun<d>*> funcs;
     };
 
     template<int n>
@@ -101,19 +113,16 @@ namespace fbvp {
         static constexpr int r = (n > 0) ? n*d : n;
     };
 
-    template<unsigned int d, int n = Eigen::Dynamic>
+    template<unsigned int d, int n = Eigen::Dynamic, int nl1 = SubOneIfPositive<n>::r, int... Ns>
     requires (n == Eigen::Dynamic || n > 1)
-    void simpson_residual(OdeSystem<d,n>& system, 
+    void simpson_residual(OdeSystem<d, Ns...>& system, 
             const double ts, 
             const Y<d,n>& y, Y<d,n>& f, J<d,n> *jf,
-            Y<d,SubOneIfPositive<n>::r> &yc,
-            Y<d,SubOneIfPositive<n>::r> &fc,
-            J<d,SubOneIfPositive<n>::r> *jc,
-            Y<d,SubOneIfPositive<n>::r> &res,
-            Eigen::Matrix<double, MulIfPositive<SubOneIfPositive<n>::r,d>::r, MulIfPositive<n,d>::r> *jac
+            Y<d,nl1> &yc, Y<d,nl1> &fc, J<d,nl1> *jc,
+            Y<d,nl1> &res,
+            Eigen::Matrix<double, MulIfPositive<nl1,d>::r, MulIfPositive<n,d>::r> *jac
     ) {
         const int N = y.cols();
-        constexpr int nl1 = SubOneIfPositive<n>::r;
 
         system.fun(y, f, jf);
         yc = 0.5 * (y.leftCols(N - 1) + y.rightCols(N - 1)) 
