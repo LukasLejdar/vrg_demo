@@ -100,7 +100,7 @@ namespace test {
             double dt = *xit * 1e-6;
             for (auto yit = y.data(); yit != y.data() + y.size(); yit++) *yit = 0;       // y = 0
             *xit -= dt;
-            fun(x, y, nullptr); // y = y1
+            fun(x, y, nullptr);                                                          // y = y1
             for (auto yit = y.data(); yit != y.data() + y.size(); yit++) *yit *= -1;     // y = -y1
             *xit += 2*dt;
             fun(x, y, nullptr);                                                          // y = y2 - y1

@@ -14,7 +14,8 @@ namespace fbvp {
             constexpr int N = Y::ColsAtCompileTime;
             static_assert(d == 4, "Supports only 2 dimensions");
 
-            dy(Eigen::seq(0, d/2-1), Eigen::all) += y(Eigen::seq(d/2, d-1), Eigen::all);
+            dy.row(0) += y.row(2);
+            dy.row(1) += y.row(3);
 
             if (jac == nullptr) return;
 
@@ -40,9 +41,9 @@ namespace fbvp {
     };
 
     struct air_drag: public JacFun {
-        double drag_factor;
+        float drag_factor;
 
-        air_drag(double drag_coef, double air_density, double area, double mass) 
+        air_drag(float drag_coef, float air_density, float area, float mass) 
             : drag_factor(drag_coef * air_density * area / (2*mass)) {}
 
         template<typename Y, typename F, typename J = MatNone>
