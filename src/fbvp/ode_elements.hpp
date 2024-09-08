@@ -59,6 +59,7 @@ namespace fbvp {
             constexpr int dim = d / 2;
             
             Eigen::Matrix<double, 1, Y::ColsAtCompileTime> v;
+            v.setZero();
             for (int i = 0; i < dim; i++) v += y.row(dim+i).array().square().matrix();
             v = v.array().sqrt();
 

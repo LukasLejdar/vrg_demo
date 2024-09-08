@@ -26,9 +26,11 @@ void find_elevation_angle(float xf, float yf, float v0, float mass, float drag_c
     fbvp::air_drag drag{drag_coef, air_density, area, mass};
     fbvp::OdeSystem system{&vel, &grav, &drag};
 
+    system.test_composition<D, 3>();
+
     Eigen::Matrix<double, D-1, 1> bc_vars(theta, y(2, N-1), y(3, N-1));
 
-    fbvp::SetBC<D, N> set_bc = [v0, yf, xf](float ts, Eigen::Matrix<double, D-1, 1> bc_vars,
+    fbvp::SetBC<D, N> set_bc = [v0, yf, xf](double ts, Eigen::Matrix<double, D-1, 1> bc_vars,
            Eigen::Map<Eigen::Matrix<double, D, 1>>& a, 
            Eigen::Map<Eigen::Matrix<double, D, 1>>& b) -> void {
 
@@ -39,15 +41,24 @@ void find_elevation_angle(float xf, float yf, float v0, float mass, float drag_c
         b(1) = yf;                b(3) = bc_vars(2);          
     };
 
-    fbvp::BCFunJac<D, N> bc_jac = [v0](float ts, Eigen::Matrix<double, D-1, 1> bc_vars,
+    fbvp::BCFunJac<D, N> bc_jac = [v0](double ts, double error, Eigen::Matrix<double, D-1, 1> bc_vars,
            const Eigen::Matrix<double, D*(N-1), D*N>& jac, 
            Eigen::Map<Eigen::Matrix<double, D*(N-1), D-1>>& bc_var_jac) -> void {
+
+        std::cout << std::setprecision(10);
+        std::cout << "elevační úhel: " << bc_vars(0) << " error: " << error << "\n";
+
         bc_var_jac(Eigen::all, 0) = -jac(Eigen::all, 2) * sin(bc_vars(0)) * v0 + jac(Eigen::all, 3) * cos(bc_vars(0)) * v0;
         bc_var_jac(Eigen::all, 1) = jac(Eigen::all, D*(N-1) + 2);
         bc_var_jac(Eigen::all, 2) = jac(Eigen::all, D*(N-1) + 3);
     };
 
-    fbvp::solve_fbvp(system, y, ts, bc_vars, set_bc, bc_jac);
+    fbvp::solve_fbvp(system, y, &ts, bc_vars, set_bc, bc_jac);
+
+    std::cout << "\ny:\n";
+    std::cout << y << "\n\n";
+
+    std::cout << "Zásah v čase: " << ts*(N-1) << " s\n";
 }
 
 void find_elevation_angle(float x, float y, float z, float xf, float yf, float zf, 

@@ -19,7 +19,6 @@ namespace test {
         { *t } -> std::same_as<double>;
     };
 
-    // Define the concept is_iterable
     template <typename T>
     concept DoubleIterable = requires(T v) {
         { v.data() } -> std::convertible_to<DereferencableToDouble>;
