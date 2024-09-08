@@ -12,16 +12,20 @@ namespace fbvp {
         void fun(const Eigen::MatrixBase<Y>& y, Eigen::MatrixBase<F>& dy, Eigen::MatrixBase<J>* jac = nullptr) {
             constexpr int d = Y::RowsAtCompileTime;
             constexpr int N = Y::ColsAtCompileTime;
-            static_assert(d == 4, "Supports only 2 dimensions");
+            static_assert(d % 2 == 0, "The number of ODEs must be even so that every spatial dimension can have its derivative");
 
-            dy.row(0) += y.row(2);
-            dy.row(1) += y.row(3);
+            constexpr int dim = d / 2;
+
+            for (int i = 0; i < dim; i++) {
+                dy.row(i) += y.row(dim+i);
+            }
 
             if (jac == nullptr) return;
 
             for (int i = 0; i < N; i++) {
-                (*jac)(d*i + 0, d*i + 2) += 1;
-                (*jac)(d*i + 1, d*i + 3) += 1;
+                for (int j = 0; j < dim; j++) {
+                    (*jac)(d*i + j, d*i + dim +j) += 1;
+                }
             }
         } 
     };
@@ -34,9 +38,9 @@ namespace fbvp {
         void fun(const Eigen::MatrixBase<Y>& y, Eigen::MatrixBase<F>& dy, Eigen::MatrixBase<J>* jac = nullptr) {
             constexpr int d = Y::RowsAtCompileTime;
             constexpr int N = Y::ColsAtCompileTime;
-            static_assert(d == 4, "Supports only 2 dimensions");
+            static_assert(d % 2 == 0, "The number of ODEs must be even so that every spatial dimension can have its derivative");
 
-            dy.row(3).array() += g;
+            dy.row(d-1).array() += g;
         }
     };
 
@@ -50,13 +54,17 @@ namespace fbvp {
         void fun(const Eigen::MatrixBase<Y>& y, Eigen::MatrixBase<F>& dy, Eigen::MatrixBase<J>* jac = nullptr) {
             constexpr int d = Y::RowsAtCompileTime;
             constexpr int N = Y::ColsAtCompileTime;
-            static_assert(d == 4, "Supports only 2 dimensions");
+            static_assert(d % 2 == 0, "The number of ODEs must be even so that every spatial dimension can have its derivative");
 
-            Eigen::Matrix<double, 1, Y::ColsAtCompileTime> v = 
-                (y.row(2).array().square() + y.row(3).array().square()).array().sqrt();
+            constexpr int dim = d / 2;
+            
+            Eigen::Matrix<double, 1, Y::ColsAtCompileTime> v;
+            for (int i = 0; i < dim; i++) v += y.row(dim+i).array().square().matrix();
+            v = v.array().sqrt();
 
-            dy.row(2).array() -= drag_factor*v.array()*y.row(2).array();
-            dy.row(3).array() -= drag_factor*v.array()*y.row(3).array();
+            for (int i = 0; i < dim; i++) {
+                dy.row(dim+i).array() -= drag_factor*v.array()*y.row(dim+i).array();
+            }
 
             if (jac == nullptr) return;
 
@@ -65,10 +73,12 @@ namespace fbvp {
                 double vi = v(i);
                 if (abs(vi) == 0) vi = 1;
 
-                (*jac)(rows*i + 2, rows*i + 2) -= drag_factor*(v(i) + y(2, i)*y(2, i)/vi );
-                (*jac)(rows*i + 3, rows*i + 3) -= drag_factor*(v(i) + y(3, i)*y(3, i)/vi );
-                (*jac)(rows*i + 2, rows*i + 3) -= drag_factor*y(2, i)*y(3, i)/vi;
-                (*jac)(rows*i + 3, rows*i + 2) -= drag_factor*y(3, i)*y(2, i)/vi;
+                for (int j = dim; j < d; j++) { 
+                    (*jac)(rows*i + j, rows*i + j) -= drag_factor*(v(i));
+                    for (int k = dim; k < d; k++) { 
+                        (*jac)(rows*i + j, rows*i + k) -= drag_factor*(y(j, i)*y(k, i)/vi );
+                    }
+                }
             }
         };
     };
