@@ -35,13 +35,16 @@ set(EIGEN_BUILD_DOC OFF)
 
 FetchContent_MakeAvailable(Eigen)
 
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
+
 add_executable(vrg_demo src/main.cpp)
-target_link_libraries(vrg_demo Catch2::Catch2 Eigen3::Eigen)
+target_link_libraries(vrg_demo Eigen3::Eigen)
+
+add_executable(hit_moving_target src/other_examples/hit_moving_target.cpp)
+target_link_libraries(hit_moving_target Eigen3::Eigen)
 
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib)
 include(CTest)
 include(Catch)
-
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 
