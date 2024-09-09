@@ -10,10 +10,33 @@
 #include "../src/fbvp/ode_elements.hpp"
 #include "../src/fbvp/fbvp.hpp"
 
-bool almost_equal(double a, float b) {
+bool almost_equal(double a, double b) {
  return std::fabs(a - b) <=  std::fmax(1e-4, 0.001 * std::fmax(std::fabs(a), std::fabs(b)));
 }
     
+template<int D1, int N1, int D2, int N2, typename F>
+void test_aditivity(F fun, int seed) {
+    Eigen::Matrix<double, D1, N1> x;
+    Eigen::Matrix<double, D2, N2> y;
+
+    srand(seed);
+    x.setRandom() * 1000;
+    y.setZero();
+
+    fun(x, y); y *= -1; fun(x, y);
+
+    auto yit = y.data();
+    for (size_t i = 0; i < D2; i++) {
+        for (size_t j = 0; j < D1; j++, yit++) {
+            INFO("Calling fun(x,y); y *= -1; fun(x,y) should result in y == 0");
+            INFO("Failed at y[" << j << ", " << i << "]");
+            INFO( " " << *yit << " " << (*yit == 0.0));
+            INFO("\ny\n" << y << "\n");
+            REQUIRE(almost_equal(*yit, 0));
+        }
+    };
+}
+
 template<int D1, int N1, int D2, int N2, typename F>
 void test_jac_diff(F fun, int seed) {
     Eigen::Matrix<double, D1, N1> x;
@@ -49,6 +72,17 @@ void test_ode_element(fbvp::JacFun* jacFun, int seed) {
         static_cast<T*>(jacFun)->fun(y, f, j);
     };
 
+    auto yfun = [&jacFun](const Eigen::Matrix<double, D, N> &y, Eigen::Matrix<double, D, N> &f) -> void {
+        static_cast<T*>(jacFun)->fun(y, f);
+    };
+
+    Eigen::Matrix<double, D, N> f; f.setRandom();
+    auto jfun = [&jacFun, &f](const Eigen::Matrix<double, D, N> &y, Eigen::Matrix<double, D*N, D*N> &j) -> void {
+        static_cast<T*>(jacFun)->fun(y, f, &j);
+    };
+
+    test_aditivity<D,N,D,N>(yfun, seed);
+    test_aditivity<D,N,D*N,D*N>(jfun, seed);
     test_jac_diff<D,N,D,N>(fun, seed);
 }
 
@@ -72,5 +106,3 @@ TEST_CASE("ode elements differentiation", "[differentiation]") {
     }
 }
 
-TEST_CASE("simpson residual differentiation", "[differentiation]") {
-}

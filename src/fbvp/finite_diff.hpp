@@ -28,42 +28,11 @@ namespace fbvp {
         { v.size() } -> std::convertible_to<size_t>;
     };
 
-    template<typename F, typename X, typename Y>
-    concept CallableWithXY = requires(F f, const X& x, Y& y) {
-        { f(x, y) } -> std::same_as<void>;
-    };
-
     template<typename F, typename X, typename Y, typename J>
     concept CallableWithXYJ = requires(F f, const X& x, Y& y, J* j) {
         { f(x, y, j) } -> std::same_as<void>;
     };
 
-    template <typename F, DoubleIterable X, DoubleIterable Y>
-    requires CallableWithXY<F, X, Y>
-    void aditivity( F fun, X& x, Y& y) {
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::normal_distribution<> dis(-100, 100);
-
-        for (auto it = x.data(); it != x.data() + x.size(); it++) *it = dis(gen);
-        for (auto it = y.data(); it != y.data() + y.size(); it++) *it = 0;
-
-        fun(x, y);
-        for (auto it = y.data(); it != y.data() + y.size(); it++) *it *= -1;
-        fun(x, y);
-        for (auto yit = y.data(); yit != y.data() + y.size(); yit++) {
-            int index = yit - y.data();
-            if (1e-6 > abs(*yit)) continue;
-
-            std::cout << "function does not fulfill the aditive requirement, y["
-                << yit - y.data() << "] = " << *yit << ", but should be 0\n";
-        }
-    }
-
-    bool almost_equal(double a, float b) {
-     return std::fabs(a - b) <=  std::fmax(1e-4, 0.001 * std::fmax(std::fabs(a), std::fabs(b)));
-    }
-    
     template <typename F, DoubleIterable X, DoubleIterable Y, DoubleIterable J >
     requires CallableWithXYJ<F, X, Y, J>
     void jac_finite_diff( F fun, X& x, Y& y, J& j) {
