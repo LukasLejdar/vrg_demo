@@ -55,7 +55,7 @@ void find_elevation_angle(float xf, float yf, float zf, float vx, float vy, floa
            Eigen::Map<Eigen::Matrix<double, D*(N-1), D-1>>& bc_var_jac) -> void {
 
         std::cout << std::setprecision(10);
-        std::cout << "theta " << bc_vars(0) << " psi " << bc_vars(1) << " error: " << error << "\n";
+        std::cout << "theta " << bc_vars(0) << " phi " << bc_vars(1) << " error: " << error << "\n";
 
         bc_var_jac(Eigen::all, 1) = -jac(Eigen::all, 3) * v0 * cos(bc_vars[0]) * sin(bc_vars(1)) +jac(Eigen::all, 4) * v0 * cos(bc_vars[0]) * cos(bc_vars(1));
         bc_var_jac(Eigen::all, 0) = -jac(Eigen::all, 3) * v0 * sin(bc_vars[0]) * cos(bc_vars[1]) -jac(Eigen::all, 4) * v0 * sin(bc_vars[0]) * sin(bc_vars[1]);
@@ -68,7 +68,7 @@ void find_elevation_angle(float xf, float yf, float zf, float vx, float vy, floa
 
     fbvp::solve_fbvp(system, y, &ts, bc_vars, set_bc, bc_jac, 50, 1e-6);
 
-    std::cout << "\ny:\n";
+    std::cout << "\nx, y, z, vx, vy, vz pro časový krok " << ts << " s\n";
     std::cout << y << "\n\n";
 
     std::cout << "Zásah v čase: " << ts*(N-1) << " s\n";
@@ -77,7 +77,7 @@ void find_elevation_angle(float xf, float yf, float zf, float vx, float vy, floa
 
 int main(int argc, char* argv[]) {
     std::vector<std::string> parameters = {"x1", "y1", "z1", "vx", "vy", "vz", "v0", "m"}; 
-    std::array<float, 8> args = {1200, 0, 100, -100, 10, 5, 350,  0.007};
+    std::array<float, 8> args = {800, 0, 100, -30, 100, 10, 350,  0.007};
     size_t width = 7;
 
     for (int i = 1; i < 9 && i < argc; i++) {

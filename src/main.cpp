@@ -54,7 +54,7 @@ void find_elevation_angle(float xf, float yf, float v0, float mass, float drag_c
 
     fbvp::solve_fbvp(system, y, &ts, bc_vars, set_bc, bc_jac);
 
-    std::cout << "\ny:\n";
+    std::cout << "\nx, y, vx, vy, pro časový krok " << ts << " s\n";
     std::cout << y << "\n\n";
 
     std::cout << "Zásah v čase: " << ts*(N-1) << " s\n";
