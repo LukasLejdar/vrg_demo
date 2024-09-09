@@ -1,14 +1,12 @@
 import numpy as np
-import termplotlib as tpl
+import matplotlib.pyplot as plt
 import math
 
 cd = 0.3
 mass = 0.007
 air_density = 1.293
-area = 4.561e-5
+area = 4.5e-5
 drag_factor = cd * air_density * area / (2*mass)
-v0 = 350
-target = np.array([1300, 20])
 g = np.array([0, -9.8])
 
 
@@ -48,9 +46,12 @@ def residual(t, y, theta, ts):
 def residual_jac(t, y, ts):
     return fun_jac(t, y) - A[:, None, :, None] * np.eye(4, 4)[None, :, None, :] * ts
 
-theta = 0.2
-time_scale = target[0] / v0
-ts = 1 / time_scale
+N = 10 
+v0 = 350 
+theta = 0.1
+target = np.array([1200, 20])
+time = 12
+ts = time / N
 
 t = np.polynomial.legendre.leggauss(10)[0]
 t = (np.append(t, 1) + 1) / 2
@@ -67,9 +68,11 @@ for i in range(1000):
     y[-1, 0] = target[0]
     y[-1, 2] = target[1]
 
-    fig = tpl.figure()
-    fig.plot(y[:, 0], y[:, 2], width=100, height=20)
-    fig.show()
+    ax = plt.gca()
+    ax.set_aspect(4, adjustable='box')
+    plt.ylim(-40, 150) 
+    plt.plot(y[:, 0], y[:, 2])
+    plt.show()
 
     res = residual(t, y, theta, ts)
     jac = residual_jac(t, y, ts)
@@ -85,32 +88,3 @@ for i in range(1000):
     y -= dy
 
     print(ts, theta, np.sum(res ** 2))
-
-
-
-
-
-#for i in range(100):
-#    fig = tpl.figure()
-#    fig.plot(y[:, 0], y[:, 2], width=100, height=20)
-#    fig.show()
-#
-#    y0 = np.array([0, math.cos(theta)*v0, 0, math.sin(theta)*v0])
-#    res = residual(t, y, theta, ts)
-#    jac = residual_jac(t, y, ts)
-#
-#    for i,j in np.ndindex(y.shape):
-#        dt = 1e-5
-#        y[i,j] += dt
-#        res2 = residual(t, y, theta, ts)
-#        y[i,j] -= 2*dt
-#        res1 = residual(t, y, theta, ts)
-#        y[i,j] += dt
-#        
-#        for k,l in np.ndindex(y.shape):
-#            assert(1e-3 > jac[k,l,i,j] - (res2[k,l] - res1[k,l]) / (2*dt) )
-#        
-#
-#    y = y - np.tensordot(np.linalg.tensorinv(jac), res)
-#    print(np.sum(res ** 2))
-#
