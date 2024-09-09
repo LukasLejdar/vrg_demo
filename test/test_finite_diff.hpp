@@ -26,8 +26,8 @@ void test_aditivity(F fun, int seed) {
     fun(x, y); y *= -1; fun(x, y);
 
     auto yit = y.data();
-    for (size_t i = 0; i < D2; i++) {
-        for (size_t j = 0; j < D1; j++, yit++) {
+    for (size_t i = 0; i < N2; i++) {
+        for (size_t j = 0; j < D2; j++, yit++) {
             INFO("Calling fun(x,y); y *= -1; fun(x,y) should result in y == 0");
             INFO("Failed at y[" << j << ", " << i << "]");
             INFO( " " << *yit << " " << (*yit == 0.0));
@@ -46,7 +46,7 @@ void test_jac_diff(F fun, int seed) {
 
     f.setZero(); j_true.setZero(); j_fun.setZero();
     srand(seed);
-    x.setRandom() * 1000;
+    x.setRandom();
 
     fun(x, f, &j_fun);
     fbvp::jac_finite_diff(fun, x, f, j_true);
@@ -104,5 +104,38 @@ TEST_CASE("ode elements differentiation", "[differentiation]") {
         test_ode_element<fbvp::air_drag, 4, 9>(&air_drag, 2);
         test_ode_element<fbvp::air_drag, 6, 5>(&air_drag, 6);
     }
+}
+
+template<int D, int N, typename... JacFuncs>
+void test_simpson_formula(fbvp::OdeSystem<JacFuncs...> &system, int seed) {
+    Eigen::Matrix<double, D, N> f; 
+    Eigen::Matrix<double, D*N, D*N> jf;
+    Eigen::Matrix<double, D, N-1> yc; 
+    Eigen::Matrix<double, D, N-1> fc; 
+    Eigen::Matrix<double, D*(N-1), D*(N-1)> jc;
+    Eigen::Matrix<double, D, N-1> res; 
+
+
+    auto jfun = [&](const Eigen::Matrix<double, D, N> &y, Eigen::Matrix<double, D*(N-1), D*N> &j) -> void {
+        f.setZero(); jf.setZero(); yc.setZero(); fc.setZero(); jc.setZero(); res.setZero();
+        fbvp::simpson_residual(system, 0.1, y, f, yc, fc, res, &jf, &jc, &j);
+    };
+
+    auto fun = [&](const Eigen::Matrix<double, D, N> &y, Eigen::Matrix<double, D, N-1> &res, Eigen::Matrix<double, D*(N-1), D*N> *j) -> void {
+        f.setZero(); jf.setZero(); yc.setZero(); fc.setZero(); jc.setZero(); res.setZero();
+        fbvp::simpson_residual(system, 0.1, y, f, yc, fc, res, &jf, &jc, j);
+    };
+
+    //test_aditivity<D,N,D*(N-1),D*N>(jfun, seed);
+    test_jac_diff<D,N,D,N-1>(fun, seed);
+}
+
+TEST_CASE("simpsong formula differentiation", "[differentiation]") {
+    fbvp::velocity vel{};
+    fbvp::gravity grav{-9.8f};
+    fbvp::air_drag drag{0.3f, 1.293f, 4.5e-5f, 0.007f};
+    fbvp::OdeSystem system{&vel, &grav, &drag};
+
+    test_simpson_formula<4, 3>(system, 2);
 }
 

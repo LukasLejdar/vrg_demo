@@ -41,19 +41,25 @@ namespace fbvp {
         for (auto it = y.data(); it != y.data() + y.size(); it++) *it = 0;
 
         auto jit = j.data();
-        for (auto xit = x.data(); xit != x.data() + x.size(); ++xit) {
-
-            double dt = std::max(abs(*xit * 1e-6), 1e-6);
-            for (auto yit = y.data(); yit != y.data() + y.size(); yit++) *yit = 0;       // y = 0
+        for (auto xit = x.data(); xit != x.data() + x.size(); xit++) {
+            double dt = (*xit+1e-6) * 1e-6;
+            auto jit2 = jit;
+                                                                                         
             *xit -= dt;
-            fun(x, y, nullptr);                                                          // y = y1
-            for (auto yit = y.data(); yit != y.data() + y.size(); yit++) *yit *= -1;     // y = -y1
+            fun(x, y, nullptr);
+            for (auto yit = y.data(); yit != y.data() + y.size(); yit++, jit2++) { 
+                *jit2 = -*yit;
+                *yit = 0;
+            }
+
             *xit += 2*dt;
-            fun(x, y, nullptr);                                                          // y = y2 - y1
-            *xit -= dt;
-            for (auto yit = y.data(); yit != y.data() + y.size(); yit++) *yit /= (2*dt); // y = (y2 - y1) / (2*dt)
+            fun(x, y, nullptr);
 
-            for (auto yit = y.data(); yit != y.data() + y.size(); yit++, jit++) *jit = (*yit == 0)? 0 : *yit;
+            for (auto yit = y.data(); yit != y.data() + y.size(); yit++, jit++) { 
+                *jit = (*jit + *yit) / (2*dt); 
+                *yit = 0;
+            }
+            *xit -= dt;
         }
     }
 }
