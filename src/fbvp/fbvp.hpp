@@ -1,6 +1,5 @@
 #pragma once
 
-#include "test.hpp"
 #include <cassert>
 #include <cstdlib>
 #include <eigen3/Eigen/Dense>
@@ -12,8 +11,8 @@
 #include <eigen3/unsupported/Eigen/CXX11/src/Tensor/Tensor.h>
 #include <eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDimensions.h>
 #include <eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorFixedSize.h>
-#include <iomanip>
 #include <type_traits>
+#include <iostream>
 
 
 namespace fbvp {
@@ -43,16 +42,6 @@ namespace fbvp {
         void fun(const Eigen::MatrixBase<Y>& y, Eigen::MatrixBase<F>& dy, Eigen::MatrixBase<J>* jac = nullptr);
     };
 
-    template<size_t d, size_t n, typename T>
-    bool test_jac_fun(T* fun) {
-        constexpr int N = (n < 1)? 3 : n;
-        Y<d,n> y; Y<d,n> dy; J<d,n> jac;
-
-        return test::jac_diferentiation(
-            [&fun](const Y<d,n>& y, Y<d,n>& dy, J<d,n>* jac) { 
-                fun->fun(y, dy, jac); }, y, dy, jac);
-    }
-
     template <typename... JacFuncs>
     class OdeSystem {
     public:
@@ -62,16 +51,6 @@ namespace fbvp {
         void fun(const Eigen::MatrixBase<Y>& y, Eigen::MatrixBase<F>& dy, Eigen::MatrixBase<J>* jac = nullptr) {
             static_assert(Y::ColsAtCompileTime > 0 && Y::RowsAtCompileTime > 0, "Dimensions must be known at compile time");
             _fun(y, dy, jac, std::make_index_sequence<sizeof...(JacFuncs)>{});
-        }
-
-        template<size_t d, size_t n>
-        bool test_composition() {
-            constexpr int N = (n < 1)? 3 : n;
-            Y<d,n> y; Y<d,n> dy; J<d,n> jac;
-
-            return test::jac_diferentiation(
-                [this](const Y<d,n>& y, Y<d,n>& dy, J<d,n>* jac) { 
-                    this->fun(y, dy, jac); }, y, dy, jac);
         }
 
     private:

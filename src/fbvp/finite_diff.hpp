@@ -1,5 +1,7 @@
+
 #pragma once
 
+#include <catch2/catch_all.hpp>
 #include <cassert>
 #include <cstdlib>
 #include <eigen3/Eigen/Dense>
@@ -13,7 +15,7 @@
 #include <iterator>
 #include <random>
 
-namespace test {
+namespace fbvp {
     template<typename T>
     concept DereferencableToDouble = requires(T t) {
         { *t } -> std::same_as<double>;
@@ -38,7 +40,7 @@ namespace test {
 
     template <typename F, DoubleIterable X, DoubleIterable Y>
     requires CallableWithXY<F, X, Y>
-    bool aditivity( F fun, X& x, Y& y) {
+    void aditivity( F fun, X& x, Y& y) {
         std::random_device rd;
         std::mt19937 gen(rd());
         std::normal_distribution<> dis(-100, 100);
@@ -55,10 +57,7 @@ namespace test {
 
             std::cout << "function does not fulfill the aditive requirement, y["
                 << yit - y.data() << "] = " << *yit << ", but should be 0\n";
-            return false;
         }
-
-        return true;
     }
 
     bool almost_equal(double a, float b) {
@@ -67,36 +66,15 @@ namespace test {
     
     template <typename F, DoubleIterable X, DoubleIterable Y, DoubleIterable J >
     requires CallableWithXYJ<F, X, Y, J>
-    bool jac_diferentiation( F fun, X& x, Y& y, J& j) {
+    void jac_finite_diff( F fun, X& x, Y& y, J& j) {
         assert(x.size()*y.size() == j.size());
 
-        std::function<void(const X&, Y&)> yfun = [&fun](const X& x, Y& y) -> void {
-            fun(x, y, nullptr);
-        };
-
-        std::function<void(const X&, J&)> jfun = [&fun, &y](const X& x, J& j) -> void {
-            fun(x, y, &j);
-        };
-
-        if (!test::aditivity(yfun, x, y) || !test::aditivity(jfun, x, j)) {
-            std::cout << "";
-            return false;
-        }
-
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::normal_distribution<> dis(-100, 100);
-
-        for (auto it = x.data(); it != x.data() + x.size(); it++) *it = dis(gen);
         for (auto it = y.data(); it != y.data() + y.size(); it++) *it = 0;
-        for (auto it = j.data(); it != j.data() + j.size(); it++) *it = 0;
-
-        fun(x, y, &j);
 
         auto jit = j.data();
         for (auto xit = x.data(); xit != x.data() + x.size(); ++xit) {
 
-            double dt = *xit * 1e-6;
+            double dt = std::max(abs(*xit * 1e-6), 1e-6);
             for (auto yit = y.data(); yit != y.data() + y.size(); yit++) *yit = 0;       // y = 0
             *xit -= dt;
             fun(x, y, nullptr);                                                          // y = y1
@@ -106,19 +84,7 @@ namespace test {
             *xit -= dt;
             for (auto yit = y.data(); yit != y.data() + y.size(); yit++) *yit /= (2*dt); // y = (y2 - y1) / (2*dt)
 
-            for (auto yit = y.data(); yit != y.data() + y.size(); yit++, jit++) {
-                if(almost_equal(*yit, *jit)) continue;
-                
-                std::cerr << "Malformed fun jac[" 
-                    << yit - y.data()  << ", " << xit - x.data()
-                    << "] is " << *jit << " but should be " << *yit << "\n";
-
-                std::cout << y << "\n\n";
-                std::cout << j << "\n\n";
-                return false;
-            }
+            for (auto yit = y.data(); yit != y.data() + y.size(); yit++, jit++) *jit = (*yit == 0)? 0 : *yit;
         }
-
-        return true;
     }
 }

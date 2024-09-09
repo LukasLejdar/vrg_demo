@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <eigen3/Eigen/src/Core/Matrix.h>
 #include <eigen3/Eigen/src/Core/util/Constants.h>
+#include <iomanip>
 #include <iostream>
 #include <vector>
 
@@ -25,8 +26,6 @@ void find_elevation_angle(float xf, float yf, float v0, float mass, float drag_c
     fbvp::gravity grav{-9.8f};
     fbvp::air_drag drag{drag_coef, air_density, area, mass};
     fbvp::OdeSystem system{&vel, &grav, &drag};
-
-    system.test_composition<D, 3>();
 
     Eigen::Matrix<double, D-1, 1> bc_vars(theta, y(2, N-1), y(3, N-1));
 

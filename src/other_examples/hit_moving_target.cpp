@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <eigen3/Eigen/src/Core/Matrix.h>
 #include <eigen3/Eigen/src/Core/util/Constants.h>
+#include <iomanip>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -43,7 +44,7 @@ void find_elevation_angle(float xf, float yf, float zf, float vx, float vy, floa
         a(1) = 0;                     a(4) = v0 * cos(bc_vars[0]) * sin(bc_vars[1]);
         a(2) = 0;                     a(5) = v0 * sin(bc_vars[0]);
 
-        // constants don't have to be so constant                                     
+        // The the constants don't have to be so constant                                     
         b(0) = xf + vx*ts*(N-1);      b(3) = bc_vars(2); 
         b(1) = yf + vy*ts*(N-1);      b(4) = bc_vars(3);          
         b(2) = zf + vz*ts*(N-1);      b(5) = bc_vars(4);
@@ -101,7 +102,7 @@ int main(int argc, char* argv[]) {
     std::cout << std::setw(4) << parameters[7] << std::setw(width) << args[7] << "\n";
     std::cout << "\n";
 
-    std::cout << "Cíl se pohybuje konstantní rychlostí po dráze r(t) = (x1, y1, z1) + (vx, vy, vz)*t" << "\n\n";
+    std::cout << "Cíl se pohybuje konstantní rychlostí po dráze r(t) = (x1, y1, z1) + (vx, vy, vz)*t, zatímco střelec stojí v bodě (0, 0, 0)" << "\n\n";
 
     auto started = std::chrono::high_resolution_clock::now();
     find_elevation_angle(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
