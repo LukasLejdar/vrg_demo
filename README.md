@@ -1,14 +1,15 @@
 # vrg demo
 
-Cílem je obecně řešit systém diferenciálních rovnic 1. řádu s volnými hraničními podmínkami pro neznámou b
+Cílem je obecně řešit okrajové úlohy pro systém diferenciálních rovnic
+
 <p align="center">
-  $\dot{y} = f\ (y) $
+  $$ \dot{y} = f\ (y)  $$
 </p>
 <p align="center">
-  $g(\ y( a ),\ y(b)\ ) = 0$
+  $g(\ y( a ),\ y(b)\ ) = 0$,
 </p>
 
-Speciálně bych potom měl být schopný implementovat následující zadání.
+s jednou volnou hranicí b. Speciálně bych potom měl být schopný splnit následující zadání.
 
 # Simulátor střelby
 
@@ -21,7 +22,7 @@ Speciálně bych potom měl být schopný implementovat následující zadání.
     - úhel náměru, při kterém je cíl zasažen, pokud uvažujeme jen odpor vzduchu úměrný druhé mocnině rychlosti, tj.
 
 <p align="center">
-  $\ddot{\vec{r}} = c \dot{\vec{r}}^2 - \vec{g}$
+  $\ddot{\vec{r}} = -c \dot{\vec{r}}^2 + \vec{g}$
 </p>
 
 <p align="center">
@@ -29,8 +30,21 @@ Speciálně bych potom měl být schopný implementovat následující zadání.
 </p>
 
 # Implementace
+Funkce solve_fbvp implementuje řešení okrajových úloh pomocí Hermite Simpsonovy kolokační metody kontrloy residuí, podobně, jako algoritmus z odkazu [1]. Pro $D$ rovnic a $N$ kolokačních bodů se v každém kroku počítá $D(N-1)$ tzv. zbytků 
 
-Funkce solve_fbvp implementuje Hermite Simpsonovu kolokační metodu pro kontrolu resiuí volně inspirovanou z odkazu [1]. 
+$$R = F(t_{0}, y_{0}, t_{1}, y_{1}, ..., t_{N}, y_{N})$$
+
+které musí být všechny nulové, aby vzniklá křivka přibližně vyhovovala zadanému systému diff. rovnic. Funkce F je v tomto případě rozdíl pravé a levé strany vztahu (14) na odkaze [3], kde je možné najít i detailní odvození. Vzniká tedy $D(N-1)$ rovnic pro $D(N-2)$ vnitřních bodů, které je potřeba doplnit počtem $D$ hraničních proměnných, aby byl problém řešitelný. Protože je jedna z hranic volná, bude jednou z těchto proměnných muset být právě konečný parametr $b$. Všechny kolokační body budou 'časově' rovnoměrně rozmístěné a hledá se krok mezi nimi. V případě Simulátoru střelby je to právě simulační krok $ts$, který doplní elevační úhel θ  a konečná rychlost $[vx, vy]$. Tj. 4 proměnné pro systém 2 diferenciálních rovnic 2. řádu, který lze jednoduše přepsat na požadovaný systém 4 rovnic 1. řádu.
+
+Celý problém je tím převedený na systém $D(N-1)$ nelinearních rovnic pro $D(N-1)$ proměnných, který se dál řeší metodou tečen. Je potřeba najít jakobián $J$ zobrazení $F$ a v nejjednodušším případě počítat 
+
+$$R = F(\ y_{0}(ts,\ bv),\ y_{1},\ ...,\  y_{N}(ts,\ bv)\ )$$
+
+$$(y_{1},\ ...,\ y_{N-1},\ ts,\ bv)\ = (y_{1},\ ...,\ y_{N-1},\ ts,\ bv)\ -\ J^{-1}*R$$
+
+což by mělo vést k řešení, pokud začneme s rozumným typem pro y, ts a bv. Jakobián podle proměnných bv bude muset doplit uživatel.
+
+Zvažoval jsem ještě aproximovat řešení jedním velkým polynomem místo Hermitovské interpolace, jako na odkaze [2]. Implementace by byla o něco jednodušší a v případě balistiky konverguje o něco málo rychleji. Běžněji se, ale používá  Hermitovské interpolace, která se mnohem lépe generalizuje na jiné úlohy, takže jsem zǔstal u ní. Obě metody jsou provizorně implementované v fbvp_polynom.py a fbvp_simpson.py. 
 
 
 # Odkazy
