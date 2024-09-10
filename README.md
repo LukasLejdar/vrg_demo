@@ -52,5 +52,5 @@ Zvažoval jsem ještě aproximovat řešení jedním velkým polynomem místo He
 - [1] Jacek Kierzenka and Lawrence F. Shampine. 2001. A BVP solver based on residual control and the Maltab PSE. ACM Trans. Math. Softw. 27, 3 (September 2001), 299–316.
 - [2] Hedengren, John & Asgharzadeh Shishavan, Reza & Powell, Kody & Edgar, Thomas. (2014). Nonlinear Modeling, Estimation and Predictive Control in APMonitor. Computers & Chemical Engineering. 70. 10.1016/j.compchemeng.2014.04.013. 
         https://www.researchgate.net/publication/262191158_Nonlinear_Modeling_Estimation_and_Predictive_Control_in_APMonitor
-- [3] Amestoy, P. R., Duff, I. S., L’Excellent, J.-Y., & Koster, J. (2001). A fully asynchronous multifrontal solver using distributed dynamic scheduling. SIAM Journal on Matrix Analysis and Applications, 23(1), 15–41.
+- [3] Enric celaya (2021). Second Order Collocation
         https://www.iri.upc.edu/files/scidoc/2498-Second-order-collocation.pdf
