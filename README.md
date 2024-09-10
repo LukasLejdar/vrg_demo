@@ -44,7 +44,7 @@ $$(y_{1},\ ...,\ y_{N-1},\ ts,\ bv)\ = (y_{1},\ ...,\ y_{N-1},\ ts,\ bv)\ -\ J^{
 
 což by mělo vést k řešení, pokud začneme s rozumným typem pro $y$, $ts$ a $bv$. Jakobián podle proměnných $bv$ bude muset doplit uživatel.
 
-Zvažoval jsem ještě aproximovat řešení jedním velkým polynomem místo Hermitovské interpolace, jako na odkaze [2]. Implementace by byla o něco jednodušší a v případě balistiky konverguje o něco málo rychleji. Běžněji se, ale používá  Hermitovské interpolace, která se mnohem lépe generalizuje na jiné úlohy, takže jsem zǔstal u ní. Obě metody jsou provizorně implementované v fbvp_polynom.py a fbvp_simpson.py. 
+Zvažoval jsem ještě aproximovat řešení jedním velkým polynomem místo Hermitovské interpolace, jako na odkaze [2]. Implementace by byla o něco jednodušší, ale běžněji se používá Hermitovské interpolace, která se mnohem lépe generalizuje na jiné úlohy, takže jsem zǔstal u ní. Obě metody jsou provizorně implementované v fbvp_polynom.py a fbvp_simpson.py. 
 
 
 # Odkazy
