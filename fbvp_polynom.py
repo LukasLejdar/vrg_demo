@@ -68,14 +68,16 @@ for i in range(1000):
     y[-1, 0] = target[0]
     y[-1, 2] = target[1]
 
+    res = residual(t, y, theta, ts)
+    jac = residual_jac(t, y, ts)
+
+    print("simulační krok", f"{ts:.6f}", "s   elevační úhel:", f"{theta:.6f}", "Rad   error:", np.sum(res ** 2))
+
     ax = plt.gca()
     ax.set_aspect(4, adjustable='box')
     plt.ylim(-40, 150) 
     plt.plot(y[:, 0], y[:, 2])
     plt.show()
-
-    res = residual(t, y, theta, ts)
-    jac = residual_jac(t, y, ts)
 
     jac[:, :, -1, 0] = -A @ (y - y0)
     jac[:, :, -1, 2] = 0
@@ -86,5 +88,3 @@ for i in range(1000):
     theta -= dy[-1, 2]
     ts -= dy[-1, 0]
     y -= dy
-
-    print(ts, theta, np.sum(res ** 2))

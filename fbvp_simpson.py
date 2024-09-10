@@ -81,13 +81,13 @@ for i in range(100):
     jac[:,:, -1, 0] = -z/6 -ts/12*np.tensordot(fc_jac, (f[:-1] - f[1:])) # dres/dts
     jac[:,:, -1, 1] = -jac[:,:,0,2]*math.sin(theta)*v0 + jac[:,:,0,3]*math.cos(theta)*v0 # dres/dtheta
 
+    print("simulační krok", f"{ts:.6f}", "s   elevační úhel:", f"{theta:.6f}", "Rad   error:", np.sum(res ** 2))
+
     ax = plt.gca()
     ax.set_aspect(4, adjustable='box')
     plt.ylim(-40, 150) 
     plt.plot(y[:, 0], y[:, 1])
     plt.show()
-
-    print(ts, theta, np.sum(res ** 2))
 
     dy = np.tensordot(np.linalg.tensorinv(jac[:, :, 1:, :]), res)
     y[1:,:] -= dy
