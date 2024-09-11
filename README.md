@@ -38,11 +38,11 @@ které musí být všechny nulové, aby vzniklá křivka přibližně vyhovovala
 
 Celý problém je tím převedený na systém $D(N-1)$ nelinearních rovnic pro $D(N-1)$ proměnných, který se dál řeší metodou tečen. Je potřeba najít jakobián $J$ zobrazení $F$ a v nejjednodušším případě počítat 
 
-$$R = F(\ y_{0}(ts,\ bv),\ y_{1},\ ...,\  y_{N}(ts,\ bv)\ )$$
+$$R = F(\ y_{0}(0,\ bv),\ y_{1},\ ...,\  y_{N}(ts(N-1),\ bv)\ )$$
 
 $$(y_{1},\ ...,\ y_{N-1},\ ts,\ bv)\ = (y_{1},\ ...,\ y_{N-1},\ ts,\ bv)\ -\ J^{-1}*R$$
 
-což by mělo vést k řešení, pokud začneme s rozumným typem pro $y$, $ts$ a $bv$. Jakobián podle proměnných $bv$ bude muset doplit uživatel.
+což by mělo vést k řešení, pokud začneme s rozumným typem pro $y$, $ts$ a $bv$. Jakobián podle proměnných $bv$ bude muset doplnit uživatel.
 
 Zvažoval jsem ještě aproximovat řešení jedním velkým polynomem místo Hermitovské interpolace, jako na odkaze [2]. Implementace by byla o něco jednodušší, ale běžněji se používá Hermitovské interpolace, která se mnohem lépe generalizuje na jiné úlohy, takže jsem zǔstal u ní. Obě metody jsou provizorně implementované v fbvp_polynom.py a fbvp_simpson.py. 
 
