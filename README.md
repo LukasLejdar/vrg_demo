@@ -26,7 +26,7 @@ s jednou volnou hranicí b. Speciálně bych potom měl být schopný splnit ná
 </p>
 
 <p align="center">
-    $$| \ddot{\vec{r}}(0) | = v_{0} \ \ \ \ \  \vec{r}(t_{0}) = \vec{r}_{0}  \ \ \ \ \  \vec{r}(t_{f}) = \vec{r}_{f}$$
+    $$| \dot{\vec{r}}(0) | = v_{0} \ \ \ \ \  \vec{r}(t_{0}) = \vec{r}_{0}  \ \ \ \ \  \vec{r}(t_{f}) = \vec{r}_{f}$$
 </p>
 
 # Implementace
