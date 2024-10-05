@@ -22,11 +22,11 @@ s jednou volnou hranicí b. Speciálně bych potom měl být schopný splnit ná
     - úhel náměru, při kterém je cíl zasažen, pokud uvažujeme jen odpor vzduchu úměrný druhé mocnině rychlosti, tj.
 
 <p align="center">
-  $\ddot{\vec{r}} = -c \dot{\vec{r}}^2 + \vec{g}$
+  $\ddot{\vec{r}} = -c \dot{r} \dot{\vec{r}} + \vec{g}$
 </p>
 
 <p align="center">
-    $$| \dot{\vec{r}}(0) | = v_{0} \ \ \ \ \  \vec{r}(t_{0}) = \vec{r}_{0}  \ \ \ \ \  \vec{r}(t_{f}) = \vec{r}_{f}$$
+    $$\dot{r}(0) = v_{0} \ \ \ \ \  \vec{r}(t_{0}) = \vec{r}_{0}  \ \ \ \ \  \vec{r}(t_{f}) = \vec{r}_{f}$$
 </p>
 
 # Implementace
