@@ -11,7 +11,7 @@ Cílem je obecně řešit okrajové úlohy pro systém diferenciálních rovnic
 
 s jednou volnou hranicí b. Speciálně bych potom měl být schopný splnit následující zadání.
 
-# Simulátor střelby
+## Simulátor střelby
 
 - vstup:
     - 2D bod umístění střelce
@@ -26,10 +26,29 @@ s jednou volnou hranicí b. Speciálně bych potom měl být schopný splnit ná
 </p>
 
 <p align="center">
-    $$\dot{r}(0) = v_{0} \ \ \ \ \  \vec{r}(t_{0}) = \vec{r}_{0}  \ \ \ \ \  \vec{r}(t_{f}) = \vec{r}_{f}$$
+    $$\dot{r}(t_0) = v_{0} \ \ \ \ \  \vec{r}(t_{0}) = \vec{r}_{0}  \ \ \ \ \  \vec{r}(t_{f}) = \vec{r}_{f}$$
 </p>
 
-# Implementace
+## Install
+Requirements: Eigen3 a Catch2
+
+```
+  mkdir build
+  cd build
+  cmake ..
+  cmake --build . --config Release
+```
+Run
+
+- `./bin/vrg_demo` or
+- `./bin/vrg_demo x0 y0 z0 v0 x1 y1 z1 m`
+
+Demo implementations
+
+- `python fbvp_polynom.py`
+- `python fbvp_simpson.py`
+
+## Implementace
 Funkce solve_fbvp implementuje řešení okrajových úloh pomocí Hermite Simpsonovy kolokační metody kontrloy residuí, podobně, jako algoritmus z odkazu [1]. Pro $D$ rovnic a $N$ kolokačních bodů se v každém kroku počítá $D(N-1)$ tzv. zbytků 
 
 $$R = F(t_{0}, y_{0}, t_{1}, y_{1}, ..., t_{N}, y_{N})$$
